@@ -31,6 +31,12 @@ echo "============================================"
 cd "$SLURM_SUBMIT_DIR"
 
 source .venv/bin/activate
+python -m ensurepip --upgrade
+pip install numpy pillow matplotlib
+pip install torch torchvision
+pip install scikit-learn
+pip install git+https://github.com/openai/CLIP.git
+pip install matplotlib
 
 python gen_poison.py \
     --directory selected_data/ \
