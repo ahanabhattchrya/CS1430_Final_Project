@@ -16,6 +16,7 @@ pip install matplotlib
 ```
 
 ## Running 
+### Nightshade
 data_extraction.py
 ```
 python data_extraction.py --directory data/ --concept dog --num 100
@@ -29,4 +30,8 @@ python view_images.py --input_dir data --output_dir selected_data
 gen_poison.py
 ```
 python gen_poison.py --directory selected_data/ --target_name cat
+```
+oscar for nightshade poisoning
+```
+sbatch slurm_nightshade.sh
 ```
