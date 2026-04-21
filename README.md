@@ -4,9 +4,7 @@ This is the README.md for the final project
 
 ## Installation
 ```
-#!/bin/bash
-
-# Create virtual environment
+# Create virtual environment in the folder
 python3 -m venv .venv
 source .venv/bin/activate
 python -m ensurepip --upgrade
