@@ -28,5 +28,5 @@ python view_images.py --input_dir data --output_dir selected_data
 
 gen_poison.py
 ```
-python gen_poison.py --directory selected_data/ --target_name cat --outdir OUTPUTDIR
+python gen_poison.py --directory selected_data/ --target_name cat
 ```
