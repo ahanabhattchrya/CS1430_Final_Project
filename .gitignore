@@ -18,7 +18,8 @@ __pycache__/
 *.pt
 *.pth
 *.ckpt
-
+*.out
+*.err
 *.log
 .env
 .cache/
