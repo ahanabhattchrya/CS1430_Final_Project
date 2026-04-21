@@ -35,3 +35,6 @@ oscar for nightshade poisoning
 ```
 sbatch slurm_nightshade.sh
 ```
+
+## References
+Nightshade code base: https://github.com/Shawn-Shan/nightshade-release
