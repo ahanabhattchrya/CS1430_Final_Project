@@ -1,6 +1,6 @@
 # Referencing: https://github.com/Shawn-Shan/nightshade-release/tree/main 
 import os
-from diffusers import StableDiffusionPipeline
+from diffusers import StableDiffusionPipeline, StableDiffusionXLPipeline
 import torch
 import numpy as np
 import torch.utils.data
@@ -27,11 +27,18 @@ class PoisonGeneration(object):
         return image_transforms
 
     def load_model(self):
-        pipeline = StableDiffusionPipeline.from_pretrained(
-            "stabilityai/stable-diffusion-2-1",
-            safety_checker=None,
-            revision="fp16",
+        # pipeline = StableDiffusionPipeline.from_pretrained(
+        #     "stabilityai/stable-diffusion-2-1",
+        #     safety_checker=None,
+        #     revision="fp16",
+        #     torch_dtype=torch.float16,
+        # )
+        # pipeline = pipeline.to(self.device)
+        pipeline = StableDiffusionXLPipeline.from_pretrained(
+            "stabilityai/stable-diffusion-xl-base-1.0",
+            cache_dir="./hf_cache",
             torch_dtype=torch.float16,
+            use_safetensors=True,
         )
         pipeline = pipeline.to(self.device)
         return pipeline

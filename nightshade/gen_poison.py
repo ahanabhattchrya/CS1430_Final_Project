@@ -1,4 +1,3 @@
-# Referencing: https://github.com/Shawn-Shan/nightshade-release/tree/main 
 import os
 
 import sys
@@ -8,6 +7,7 @@ import argparse
 import pickle
 from torchvision import transforms
 from opt import PoisonGeneration
+import torch
 
 
 def crop_to_square(img):
@@ -22,7 +22,8 @@ def crop_to_square(img):
 
 
 def main():
-    poison_generator = PoisonGeneration(target_concept=args.target_name, device="cuda", eps=args.eps)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    poison_generator = PoisonGeneration(target_concept=args.target_name, device=device, eps=args.eps)
     all_data_paths = glob.glob(os.path.join(args.directory, "*.p"))
     all_imgs = [pickle.load(open(f, "rb"))['img'] for f in all_data_paths]
     all_texts = [pickle.load(open(f, "rb"))['text'] for f in all_data_paths]
@@ -41,7 +42,7 @@ def parse_arguments(argv):
     parser.add_argument('-d', '--directory', type=str,
                         help="", default='')
     parser.add_argument('-od', '--outdir', type=str,
-                        help="", default='')
+                        help="", default='poisoned_outputs')
     parser.add_argument('-e', '--eps', type=float, default=0.04)
     parser.add_argument('-t', '--target_name', type=str, default="cat")
     return parser.parse_args(argv)

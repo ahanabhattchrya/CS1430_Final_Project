@@ -12,4 +12,21 @@ pip install numpy pillow matplotlib
 pip install torch torchvision
 pip install scikit-learn
 pip install git+https://github.com/openai/CLIP.git
+pip install matplotlib
+```
+
+## Running 
+data_extraction.py
+```
+python data_extraction.py --directory data/ --concept dog --num 100
+```
+
+view_images.py 
+```
+python view_images.py --input_dir data --output_dir selected_data
+```
+
+gen_poison.py
+```
+python gen_poison.py --directory selected_data/ --target_name cat --outdir OUTPUTDIR
 ```
