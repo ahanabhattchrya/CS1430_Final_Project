@@ -39,6 +39,11 @@ gen_poison.py
 ```
 python gen_poison.py --directory selected_data --target_name cat
 ```
+
+view_folder.py
+```
+python view_folder.py --folder poisoned_outputs
+```
 oscar for nightshade poisoning
 ```
 sbatch slurm_nightshade.sh
