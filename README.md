@@ -14,6 +14,7 @@ pip install scikit-learn
 pip install git+https://github.com/openai/CLIP.git
 pip install diffusers transformers accelerate safetensors
 pip install einops
+pip install scikit-image
 ```
 
 ## Running Code
@@ -24,9 +25,12 @@ python data_extraction.py --directory data/ --concept dog --num 100
 ```
 
 view_images.py 
+
+(view images with an index_mapping json between input-output)
 ```
-python view_images.py --mapping_dir mapping_data --input_dir data --output_dir selected_data
+python view_images.py --mapping_dir mapping_data --input_dir data --output_dir selected_data --has_json true
 ```
+(view poisoned image by matching input/output file names (0-100.p))
 
 ```
 python view_images.py --input_dir data --output_dir poisoned_outputs
@@ -34,7 +38,7 @@ python view_images.py --input_dir data --output_dir poisoned_outputs
 
 gen_poison.py
 ```
-python gen_poison.py --directory selected_data/ --target_name cat
+python gen_poison.py --directory selected_data --target_name cat
 ```
 oscar for nightshade poisoning
 ```

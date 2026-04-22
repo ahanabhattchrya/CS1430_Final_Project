@@ -1,4 +1,4 @@
-import os
+import os, io
 import glob
 import pickle
 import json
@@ -9,7 +9,7 @@ from matplotlib.widgets import Button
 
 
 class PairViewer:
-    def __init__(self, mapping_dir, input_dir, output_dir, pairs_per_page=10):
+    def __init__(self, mapping_dir, has_json, input_dir, output_dir, pairs_per_page=10):
         self.pairs_per_page = pairs_per_page
         self.page = 0
 
@@ -19,20 +19,42 @@ class PairViewer:
         self.input_files = glob.glob(os.path.join(input_dir, "*.p"))
         self.output_files = glob.glob(os.path.join(output_dir, "*.p"))
 
-
-        with open(os.path.join(mapping_dir, "index_mapping.json"), "r") as f:
-            self.map_out_to_in = {int(k): int(v) for k, v in json.load(f).items()}
-
         self.in_data = self.load_data(self.input_files)
         self.out_data = self.load_data(self.output_files)
 
-        self.paired_indices = [
-            (out_idx, in_idx)
-            for out_idx, in_idx in self.map_out_to_in.items()
-            if out_idx in self.out_data and in_idx in self.in_data
-        ]
+        self.use_json = has_json
 
-        self.total_pages = (len(self.paired_indices) + self.pairs_per_page - 1) // self.pairs_per_page
+        if self.use_json:
+            print("Using mapping index from json file")
+            mapping_path = os.path.join(mapping_dir, "index_mapping.json")
+
+            with open(mapping_path, "r") as f:
+                raw = json.load(f)
+
+            self.map_out_to_in = {
+                int(k): int(v)
+                for k, v in raw.items()
+            }
+
+            self.paired_indices = [
+                (out_idx, in_idx)
+                for out_idx, in_idx in self.map_out_to_in.items()
+                if out_idx in self.out_data and in_idx in self.in_data
+            ]
+
+        else:
+            common = sorted(
+                set(self.in_data.keys()) & set(self.out_data.keys())
+            )
+            self.paired_indices = [(i, i) for i in common]
+
+        if len(self.paired_indices) == 0:
+            raise ValueError("No valid pairs found.")
+
+        self.total_pages = (
+            len(self.paired_indices) + self.pairs_per_page - 1
+        ) // self.pairs_per_page
+
 
         self.fig, self.axes = plt.subplots(2, self.pairs_per_page, figsize=(18, 4))
         self.fig.subplots_adjust(bottom=0.15, top=0.88)
@@ -50,12 +72,32 @@ class PairViewer:
 
     def load_data(self, files):
         data = {}
+
         for f in files:
             idx = int(os.path.basename(f).split(".")[0])
+
             with open(f, "rb") as fp:
                 obj = pickle.load(fp)
-            data[idx] = obj["img"]
+
+            img = obj["img"]
+
+            if isinstance(img, bytes):
+                # if accidentally stored as raw bytes
+                img = Image.open(io.BytesIO(img)).convert("RGB")
+
+            elif isinstance(img, Image.Image):
+                img = np.array(img)
+
+            elif isinstance(img, np.ndarray):
+                pass
+
+            else:
+                raise TypeError(f"Unknown image type at {f}: {type(img)}")
+
+            data[idx] = img
+
         return data
+
 
     def render(self):
         for ax in self.axes.flatten():
@@ -79,13 +121,16 @@ class PairViewer:
         self.axes[1, 0].set_ylabel("Poisoned Output Images", fontsize=12)
 
         self.fig.text(0.1, 0.72, "Input", rotation=90,
-                  fontsize=12, va="center", ha="center")
+                      fontsize=12, va="center", ha="center")
 
         self.fig.text(0.1, 0.28, "Poisoned Output", rotation=90,
-                    fontsize=12, va="center", ha="center")
+                      fontsize=12, va="center", ha="center")
+
+        mode = "JSON Mapping" if self.use_json else "Index Matching"
 
         self.fig.suptitle(
-            f"Clean Input - Filtered Output Pairs | Page {self.page + 1}/{self.total_pages}",
+            f"Clean Input - Filtered Output Pairs | {mode} | "
+            f"Page {self.page + 1}/{self.total_pages}",
             fontsize=13
         )
 
@@ -108,9 +153,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_dir", required=True)
     parser.add_argument("--output_dir", required=True)
-    parser.add_argument("--mapping_dir", required=True)
+    parser.add_argument("--mapping_dir", default="mapping_data")
+    parser.add_argument("--has_json", type=bool, default=False)
 
     args = parser.parse_args()
 
-    viewer = PairViewer(args.mapping_dir, args.input_dir, args.output_dir)
+    viewer = PairViewer(
+        args.mapping_dir,
+        args.has_json,
+        args.input_dir,
+        args.output_dir
+    )
+
     plt.show()
