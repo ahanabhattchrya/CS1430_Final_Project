@@ -2,6 +2,7 @@
 
 # algorithm 1 from paper in section 4.3 Poison Reconstruction i think?
 # unsure what to call this file? could just call it inference maybe?
+# testing
 class Inference:
     def __init__(self, model, T):
         self.model = model
