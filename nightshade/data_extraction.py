@@ -71,6 +71,8 @@ def main():
     clip_model = CLIP()
 
     data_dir = args.directory
+    mapping_dir = os.path.abspath(args.mapping_dir if args.mapping_dir else "mapping_data")
+    os.makedirs(mapping_dir, exist_ok=True)
     source_concept = args.concept
 
     outdir = args.outdir if args.outdir and args.outdir.strip() != "" else "selected_data"
@@ -128,9 +130,16 @@ def main():
 
         index_mapping[i] = int(orig_idx)
 
-    mapping_path = os.path.join(outdir, "index_mapping.json")
+    # mapping_path = os.path.join(outdir, "index_mapping.json")
+    # with open(mapping_path, "w") as f:
+    #     json.dump(index_mapping, f, indent=2)
+    mapping_path = os.path.join(mapping_dir, "index_mapping.json")
+
     with open(mapping_path, "w") as f:
         json.dump(index_mapping, f, indent=2)
+
+    print(f"Saved {len(final_list)} samples to {outdir}")
+    print(f"Saved index mapping to {mapping_path}")
 
 
 def parse_arguments(argv):
@@ -140,6 +149,7 @@ def parse_arguments(argv):
     parser.add_argument('-od', '--outdir', type=str, default='')
     parser.add_argument('-n', '--num', type=int, default=100)
     parser.add_argument('-c', '--concept', type=str, required=True)
+    parser.add_argument('-md', '--mapping_dir', type=str, default='mapping_data')
 
     return parser.parse_args(argv)
 

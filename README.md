@@ -25,7 +25,7 @@ python data_extraction.py --directory data/ --concept dog --num 100
 
 view_images.py 
 ```
-python view_images.py --input_dir data --output_dir selected_data
+python view_images.py --mapping_dir mapping_data --input_dir data --output_dir selected_data
 ```
 
 ```

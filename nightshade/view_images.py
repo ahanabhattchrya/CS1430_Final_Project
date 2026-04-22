@@ -9,7 +9,7 @@ from matplotlib.widgets import Button
 
 
 class PairViewer:
-    def __init__(self, input_dir, output_dir, pairs_per_page=10):
+    def __init__(self, mapping_dir, input_dir, output_dir, pairs_per_page=10):
         self.pairs_per_page = pairs_per_page
         self.page = 0
 
@@ -19,7 +19,8 @@ class PairViewer:
         self.input_files = glob.glob(os.path.join(input_dir, "*.p"))
         self.output_files = glob.glob(os.path.join(output_dir, "*.p"))
 
-        with open(os.path.join(output_dir, "index_mapping.json"), "r") as f:
+
+        with open(os.path.join(mapping_dir, "index_mapping.json"), "r") as f:
             self.map_out_to_in = {int(k): int(v) for k, v in json.load(f).items()}
 
         self.in_data = self.load_data(self.input_files)
@@ -107,8 +108,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_dir", required=True)
     parser.add_argument("--output_dir", required=True)
+    parser.add_argument("--mapping_dir", required=True)
 
     args = parser.parse_args()
 
-    viewer = PairViewer(args.input_dir, args.output_dir)
+    viewer = PairViewer(args.mapping_dir, args.input_dir, args.output_dir)
     plt.show()
