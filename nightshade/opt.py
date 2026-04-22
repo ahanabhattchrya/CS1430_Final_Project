@@ -99,16 +99,10 @@ class PoisonGeneration(object):
         return final_img
 
     def generate_all(self, image_paths, target_concept):
-        # res_imgs = []
-        # for idx, image_f in enumerate(image_paths):
-        #     cur_img = image_f.convert('RGB')
-        #     perturbed_img = self.generate_one(cur_img, target_concept)
-        #     res_imgs.append(perturbed_img)
-        # return res_imgs
-        image_paths = sorted(
-        image_paths,
-        key=lambda x: int(os.path.basename(x).split(".")[0])
-        )
+        # image_paths = sorted(
+        #     image_paths,
+        #     key=lambda x: int(os.path.basename(x).split(".")[0])
+        # )
 
         res_imgs = []
 
