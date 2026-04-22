@@ -16,7 +16,7 @@ pip install diffusers transformers accelerate safetensors
 pip install einops
 ```
 
-## Running 
+## Running Code
 ### Nightshade
 data_extraction.py
 ```
