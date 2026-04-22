@@ -14,7 +14,6 @@ pip install scikit-learn
 pip install git+https://github.com/openai/CLIP.git
 pip install diffusers transformers accelerate safetensors
 pip install einops
-pip install scikit-image
 ```
 
 ## Running Code
