@@ -12,6 +12,8 @@ pip install numpy pillow matplotlib
 pip install torch torchvision
 pip install scikit-learn
 pip install git+https://github.com/openai/CLIP.git
+pip install diffusers transformers accelerate safetensors
+pip install einops
 ```
 
 ## Running 
