@@ -1,4 +1,4 @@
-# i think algorithm 1 should live here?
+# i think algorithm 2 should live here?
 # implments models and lightshed_loss 
 
 def train():
