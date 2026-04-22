@@ -28,6 +28,10 @@ view_images.py
 python view_images.py --input_dir data --output_dir selected_data
 ```
 
+```
+python view_images.py --input_dir data --output_dir poisoned_outputs
+```
+
 gen_poison.py
 ```
 python gen_poison.py --directory selected_data/ --target_name cat
