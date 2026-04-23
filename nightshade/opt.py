@@ -27,13 +27,6 @@ class PoisonGeneration(object):
         return image_transforms
 
     def load_model(self):
-        # pipeline = StableDiffusionPipeline.from_pretrained(
-        #     "stabilityai/stable-diffusion-2-1",
-        #     safety_checker=None,
-        #     revision="fp16",
-        #     torch_dtype=torch.float16,
-        # )
-        # pipeline = pipeline.to(self.device)
         pipeline = StableDiffusionXLPipeline.from_pretrained(
             "stabilityai/stable-diffusion-xl-base-1.0",
             cache_dir="./hf_cache",
@@ -41,20 +34,33 @@ class PoisonGeneration(object):
             use_safetensors=True,
         )
         pipeline = pipeline.to(self.device)
+
         pipeline.vae = pipeline.vae.float()
         pipeline.vae.eval()
+
         return pipeline
 
     def generate_target(self, prompts):
-        torch.manual_seed(123)  # ensuring the target image is consistent across poison set
+        torch.manual_seed(123)
         with torch.no_grad():
-            target_imgs = self.full_sd_model(prompts, guidance_scale=7.5, num_inference_steps=50,
-                                             height=512, width=512).images
+            target_imgs = self.full_sd_model(
+                prompts,
+                guidance_scale=7.5,
+                num_inference_steps=50,
+                height=512,
+                width=512
+            ).images
+
         target_imgs[0].save("target.png")
         return target_imgs[0]
 
     def get_latent(self, tensor):
-        latent_features = self.full_sd_model.vae.encode(tensor).latent_dist.mean
+        tensor = tensor.float()
+
+        latent_features = self.full_sd_model.vae.encode(
+            tensor
+        ).latent_dist.mean
+
         return latent_features
 
     def generate_one(self, pil_image, target_concept):
@@ -74,7 +80,7 @@ class PoisonGeneration(object):
         modifier = torch.clone(source_tensor) * 0.0
 
         t_size = 500
-        max_change = self.eps / 0.5  # scale from 0,1 to -1,1
+        max_change = self.eps / 0.5
         step_size = max_change
 
         for i in range(t_size):
@@ -82,6 +88,9 @@ class PoisonGeneration(object):
             modifier.requires_grad_(True)
 
             adv_tensor = torch.clamp(modifier + source_tensor, -1, 1)
+
+            adv_tensor = adv_tensor.float()
+
             adv_latent = self.get_latent(adv_tensor)
 
             loss = (adv_latent - target_latent).norm()
@@ -101,10 +110,6 @@ class PoisonGeneration(object):
         return final_img
 
     def generate_all(self, image_paths, target_concept):
-        # image_paths = sorted(
-        #     image_paths,
-        #     key=lambda x: int(os.path.basename(x).split(".")[0])
-        # )
         res_imgs = []
 
         for idx, image_f in enumerate(image_paths):
