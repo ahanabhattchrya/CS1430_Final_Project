@@ -16,9 +16,16 @@ class PairViewer:
         self.input_dir = input_dir
         self.output_dir = output_dir
 
-        self.input_files = glob.glob(os.path.join(input_dir, "*.p"))
-        self.output_files = glob.glob(os.path.join(output_dir, "*.p"))
+        self.input_files = sorted(
+            glob.glob(os.path.join(input_dir, "*.p")),
+            key=lambda x: int(os.path.basename(x).split(".")[0])
+        )
 
+        self.output_files = sorted(
+            glob.glob(os.path.join(output_dir, "*.p")),
+            key=lambda x: int(os.path.basename(x).split(".")[0])
+        )
+       
         self.in_data = self.load_data(self.input_files)
         self.out_data = self.load_data(self.output_files)
 

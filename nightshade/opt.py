@@ -103,7 +103,6 @@ class PoisonGeneration(object):
         #     image_paths,
         #     key=lambda x: int(os.path.basename(x).split(".")[0])
         # )
-
         res_imgs = []
 
         for idx, image_f in enumerate(image_paths):

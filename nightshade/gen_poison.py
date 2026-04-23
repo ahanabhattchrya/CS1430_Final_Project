@@ -24,7 +24,11 @@ def crop_to_square(img):
 def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     poison_generator = PoisonGeneration(target_concept=args.target_name, device=device, eps=args.eps)
-    all_data_paths = glob.glob(os.path.join(args.directory, "*.p"))
+    # all_data_paths = glob.glob(os.path.join(args.directory, "*.p"))
+    all_data_paths = sorted(
+        glob.glob(os.path.join(args.directory, "*.p")),
+        key=lambda x: int(os.path.splitext(os.path.basename(x))[0])
+    )
     all_imgs = [pickle.load(open(f, "rb"))['img'] for f in all_data_paths]
     all_texts = [pickle.load(open(f, "rb"))['text'] for f in all_data_paths]
     all_imgs = [Image.fromarray(img) for img in all_imgs]
