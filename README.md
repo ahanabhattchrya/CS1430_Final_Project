@@ -32,7 +32,7 @@ python view_images.py --mapping_dir mapping_data --input_dir data --output_dir s
 (view poisoned image by matching input/output file names (0-100.p))
 
 ```
-python view_images.py --input_dir data --output_dir poisoned_outputs
+python view_images.py --input_dir selected_data --output_dir poisoned_outputs
 ```
 
 gen_poison.py
@@ -44,7 +44,12 @@ view_folder.py
 ```
 python view_folder.py --folder poisoned_outputs
 ```
+
 oscar for nightshade poisoning
+``` 
+cd nightshade
+source .venv/bin/activate
+```
 ```
 sbatch slurm_nightshade.sh
 ```
