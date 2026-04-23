@@ -52,6 +52,7 @@ source .venv/bin/activate
 ```
 ```
 sbatch slurm_nightshade.sh
+sbatch slurm_eval.sh
 ```
 
 ## References

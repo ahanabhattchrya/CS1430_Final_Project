@@ -65,8 +65,8 @@ class PoisonGeneration(object):
         target_image = self.generate_target("A photo of a {}".format(target_concept))
         target_tensor = img2tensor(target_image).to(self.device)
 
-        target_tensor = target_tensor.half()
-        source_tensor = source_tensor.half()
+        source_tensor = source_tensor.float()
+        target_tensor = target_tensor.float()
 
         with torch.no_grad():
             target_latent = self.get_latent(target_tensor)
