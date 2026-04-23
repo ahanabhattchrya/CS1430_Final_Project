@@ -70,6 +70,9 @@ def run(clean_folder, poison_folder, target_path, device="cuda"):
         clean_latents.append(encoder.encode(c_t))
         poison_latents.append(encoder.encode(p_t))
 
+    assert len(clean_latents) > 0, "No clean latents found — check file loading"
+    assert len(poison_latents) > 0, "No poison latents found — check file loading"
+
     clean_latents = torch.cat(clean_latents)
     poison_latents = torch.cat(poison_latents)
     target_latent = encoder.encode(img2tensor(target_img))
@@ -130,7 +133,7 @@ def run(clean_folder, poison_folder, target_path, device="cuda"):
 
 if __name__ == "__main__":
     run(
-        clean_folder="selected_inputs",
+        clean_folder="selected_data",
         poison_folder="poisoned_outputs",
         target_path="target.png",
         device="cuda"
