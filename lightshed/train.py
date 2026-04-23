@@ -10,13 +10,13 @@ from lightshed_loss import LightShedLoss
 
 import hyperparameters as hp
 
-def train(device = "cpu", train_loader, val_loader):
+def train(train_loader, val_loader):
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     model = Encoder.to(device)
     loss_fn = LightShedLoss()
 
     loss_val = 0
 
-    # I think here is where the training dataset will go?
     for epoch in range(EPOCHS):
 
         model.train()
@@ -63,11 +63,33 @@ def comp_entropy(i):
         entropies.append(ent)
 
     return torch.stack(entropies)
-
-
     
 def comp_threshold(model, val_loader):
-    pass
+    model.eval()
+
+    entropy_list = []
+    labels_list = []
+
+    with torch.no_grad():
+        for I, I_cor, labels in val_loader:
+            I = I.to(DEVICE)
+
+            P_hat = model(I)
+            ent = compute_entropy_batch(P_hat)
+
+            all_entropy.extend(ent.cpu().numpy())
+            all_labels.extend(labels.numpy())
+    
+    entropy_list = np.array(entropy_list)
+    labels_list = np.array(labels_list)
+
+    fpr, tpr, thresholds = roc_curve(labels_list, entropy_list)
+
+    best_T = np.argmax(tpr - fpr)
+    T = thresholds[best_T]
+
+    return T
+
 
 
 
