@@ -1,0 +1,4 @@
+EPOCHS = 200
+LR = 1e-4
+BATCH_SIZE = 8
+
