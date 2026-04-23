@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from blocks import ResidualBlock
+from blocks import ResidualBlock, AttentionBlock, EncBlock, DecBlock
 
 
 
@@ -9,23 +9,13 @@ class Encoder(nn.Module):
     # each stage downsample feature maps by 2x
     def __init__(self, in_chan):
         super().__init__()
-        self.in_chan = in_chan
-        self.layer1 = nn.Sequential(nn.Conv2d(self.in_chan, 64, 3, stride=2, padding=1), 
-                                    nn.BatchNorm2d(64), 
-                                    nn.ReLU(),
-                                    ResidualBlock(64))
-        self.layer2 = nn.Sequential(nn.Conv2d(64, 128, 3, stride=2, padding=1), 
-                                    nn.BatchNorm2d(128), 
-                                    nn.ReLU(), 
-                                    ResidualBlock(128))
-        self.layer3 = nn.Sequential(nn.Conv2d(128, 256, 3, stride=2, padding=1), 
-                                    nn.BatchNorm2d(256), 
-                                    nn.ReLU(), 
-                                    ResidualBlock(256))
-        self.layer4 = nn.Sequential(nn.Conv2d(256, 512, 3, stride=2, padding=1), 
-                                    nn.BatchNorm2d(512), 
-                                    nn.ReLU(), 
-                                    ResidualBlock(512))
+        self.in_chan = in_chan # 3
+        self.layer1 = EncBlock(self.in_chan, 64)
+        self.layer2 = EncBlock(64, 128)
+
+        self.layer3 = EncBlock(128, 265)
+        self.layer4 = EncBlock(256, 512)
+
     def forward(self, x):
         feat1 = self.layer1(x)
         feat2 = self.layer2(feat1)
@@ -36,8 +26,20 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
-    # transposed conv and attention block
-    ...
+    def __init__(self, in_chan):
+        super().__init__()
+        self.in_chan = in_chan
+        self.dec1 = DecBlock(self.in_chan, )
+        self.dec2 = DecBlock()
+        self.dec2 = DecBlock()
+        self.dec2 = DecBlock()
+        # transposed conv and attention block
+    
+    def forward(self, bottle_out, features):
+        # feat_map from corresponding encoeer layer * attention map
+        f1, f2, f3, f4 = features
+        d1 = self.dec1(bottle_out)
+        
 
 
 
@@ -45,7 +47,9 @@ class LightShedAE(nn.Module):
     def __init__(self):
         
         self.encoder = Encoder()
-        self.bottleneck = ... # conv layer -> 2x residual blocks
+        self.bottleneck = nn.Sequential(nn.Conv2d(3, 512, 3, stride=2), 
+                                        ResidualBlock(512), 
+                                        ResidualBlock(512)) # conv layer -> 2x residual blocks
         self.decoder = Decoder()
     
     def foward(self, x):
