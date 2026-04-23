@@ -41,6 +41,8 @@ class PoisonGeneration(object):
             use_safetensors=True,
         )
         pipeline = pipeline.to(self.device)
+        pipeline.vae = pipeline.vae.float()
+        pipeline.vae.eval()
         return pipeline
 
     def generate_target(self, prompts):
