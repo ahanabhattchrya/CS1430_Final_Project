@@ -30,12 +30,15 @@ class PoisonGeneration(object):
         pipeline = StableDiffusionXLPipeline.from_pretrained(
             "stabilityai/stable-diffusion-xl-base-1.0",
             cache_dir="./hf_cache",
-            torch_dtype=torch.float16,
+            torch_dtype=torch.float32,   
             use_safetensors=True,
         )
         pipeline = pipeline.to(self.device)
 
+
         pipeline.vae = pipeline.vae.float()
+        pipeline.unet = pipeline.unet.float()
+
         pipeline.vae.eval()
 
         return pipeline
@@ -87,9 +90,7 @@ class PoisonGeneration(object):
             actual_step_size = step_size - (step_size - step_size / 100) / t_size * i
             modifier.requires_grad_(True)
 
-            adv_tensor = torch.clamp(modifier + source_tensor, -1, 1)
-
-            adv_tensor = adv_tensor.float()
+            adv_tensor = torch.clamp(modifier + source_tensor, -1, 1).float()
 
             adv_latent = self.get_latent(adv_tensor)
 
