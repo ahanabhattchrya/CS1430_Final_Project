@@ -3,6 +3,7 @@ import glob
 import torch
 import numpy as np
 from PIL import Image
+import pickle
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 from diffusers import StableDiffusionXLPipeline
@@ -30,14 +31,26 @@ class VAEEncoder:
         with torch.no_grad():
             latent = self.pipe.vae.encode(img_tensor.to(self.device).half()).latent_dist.mean
         return latent
+    
+    import pickle
 
 def load_images(folder):
     paths = sorted(
         glob.glob(os.path.join(folder, "*.p")),
         key=lambda x: int(os.path.splitext(os.path.basename(x))[0])
     )
-    imgs = [Image.open(p).convert("RGB") for p in paths]
+    imgs = []
+    for p in paths:
+        with open(p, "rb") as f:
+            obj = pickle.load(f)
+        img = obj["img"]
+        if isinstance(img, Image.Image):
+            img = np.array(img)
+        if isinstance(img, np.ndarray):
+            img = Image.fromarray(img.astype(np.uint8))
+        imgs.append(img.convert("RGB"))
     return imgs
+
 
 def run(clean_folder, poison_folder, target_path, device="cuda"):
 
