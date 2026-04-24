@@ -3,6 +3,7 @@ import torch.nn as nn
 
 
 class EncBlock(nn.Module):
+    # conv(3x3) -> batchnorm -> relu -> resblock  (downsize -> stride = 2)
     def __init__(self, in_chan, out_chan):
         super().__init__()
         self.enc = nn.Sequential(nn.Conv2d(in_chan, out_chan, kernel_size=3, stride=2, padding=1), 
@@ -14,6 +15,7 @@ class EncBlock(nn.Module):
     
 
 class DecBlock(nn.Module):
+    # rest block -> transpose conv (upsample)
     def __init__(self, in_chan, out_chan):
         super().__init__()
         self.dec = nn.Sequential(ResidualBlock(in_chan), 
@@ -24,7 +26,7 @@ class DecBlock(nn.Module):
 
 
 class ResidualBlock(nn.Module):
-    # 2x (conv(3x3) -> batchnorm -> relu)
+    # 2x (conv(3x3) -> batchnorm -> relu + skip connection)
     def __init__(self, channel):
         super().__init__()
         self.conv1 = nn.Sequential(nn.Conv2d(channel, channel, 3, padding=1), 
@@ -42,9 +44,20 @@ class ResidualBlock(nn.Module):
 
 
 class AttentionBlock(nn.Module):
-    def __init__(self, in_chan, gating):
-        self.in_chan = in_chan
-        self.gating = gating
-    
-    def forward(self, x):
-        ...
+    # HELP section 4.3, above algorithm 1 area-ish
+    # (enc feat map, dec signal prev layer) -> attention map
+    def __init__(self, in_chan, gate_chan, out_chan):
+        self.enc_feat = nn.Conv2d(in_chan, out_chan, kernel_size=1) # kernel size ?
+        self.gating = nn.Conv2d(gate_chan, out_chan, kernel_size=1)
+        self.attn_map = nn.Conv2d(in_chan, 1, kernel_size=1)
+       
+    def forward(self, x, g):
+        enc_feat = self.enc_feat(x) # feat map from encoder layer
+        gate_sig = self.gating(g) # gating signal from decoder layer
+
+        # maybe add some regularization?
+        combined = enc_feat + gate_sig # combine features
+
+        attn_map = torch.sigmoid(self.attn_map(combined)) # create attention map [0, 1] important vs not
+ 
+        return attn_map
