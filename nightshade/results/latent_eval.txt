@@ -1,7 +1,0 @@
-
-    === Latent Evaluation ===
-    Avg clean → target: nan
-    Avg poison → target: nan
-    Improvement: nan
-    Fraction improved: 0.0
-    

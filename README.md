@@ -23,26 +23,9 @@ data_extraction.py
 python data_extraction.py --directory data/ --concept dog --num 100
 ```
 
-view_images.py 
-
-(view images with an index_mapping json between input-output)
-```
-python view_images.py --mapping_dir mapping_data --input_dir data --output_dir selected_data --has_json true
-```
-(view poisoned image by matching input/output file names (0-100.p))
-
-```
-python view_images.py --input_dir selected_data --output_dir poisoned_outputs
-```
-
 gen_poison.py
 ```
 python gen_poison.py --directory selected_data --target_name cat
-```
-
-view_folder.py
-```
-python view_folder.py --folder poisoned_outputs
 ```
 
 oscar for nightshade poisoning
@@ -52,7 +35,10 @@ source .venv/bin/activate
 ```
 ```
 sbatch slurm_nightshade.sh
-sbatch slurm_eval.sh
+```
+view_images.py (view 100 clean v. poisoned images side by side)
+```
+python view_images.py --input_dir selected_data --output_dir poisoned_outputs
 ```
 
 ## References
