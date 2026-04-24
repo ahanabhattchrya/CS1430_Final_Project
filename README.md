@@ -1,6 +1,5 @@
 # CS1430_Final_Project
-
-This is the README.md for the final project
+In this project we are studying Nightshade [(Shan et al. 2024)](https://www.usenix.org/system/files/usenixsecurity25-foerster.pdf), a prompt-specific poisoning attack on text-to-image generative models, and Lightshed [(Foerster et al. 2025)](https://www.usenix.org/system/files/usenixsecurity25-foerster.pdf), a technique that detects and depoisons images that have been Nightshaded. Our goal is to implement the Nightshade algorithm, generate 100 poisoned images of concept dog, target cat, and implement the Lightshed algorithm to detect poisoned images. 
 
 ## Installation
 ```
@@ -28,7 +27,7 @@ gen_poison.py
 python gen_poison.py --directory selected_data --target_name cat
 ```
 
-oscar for nightshade poisoning
+oscar for nightshade poisoning (~2 hours for 100 images)
 ``` 
 cd nightshade
 source .venv/bin/activate
