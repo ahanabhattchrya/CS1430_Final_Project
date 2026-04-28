@@ -2,24 +2,33 @@
 # implments models and lightshed_loss 
 
 
-from models import Encoder
+from models import Encoder, LightShedAE
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from lightshed_loss import LightShedLoss
+from torch.utils.data import DataLoader, random_split
+import os
+import pickle
+import numpy as np
+from torch.utils.data import Dataset
+from sklearn.metrics import roc_curve
+from PIL import Image
+import torchvision.transforms as T
+from inference import perform_inference
 
 import hyperparameters as hp
 
 def train(train_loader, val_loader):
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = Encoder.to(device)
+    model = LightShedAE().to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=hp.LR)
     loss_fn = LightShedLoss()
 
-    loss_val = 0
-
-    for epoch in range(EPOCHS):
+    for epoch in range(hp.EPOCHS):
 
         model.train()
+        loss_val = 0
 
         for I, I_cor, is_clean in train_loader:
 
@@ -42,29 +51,21 @@ def train(train_loader, val_loader):
         avg_loss = loss_val / len(train_loader)
         print(f"Epoch {epoch+1} Loss: {avg_loss:.4f}")
     
-    T = comp_thresh(model, val_loader)
-    print(f"Threshold T = {T.6f}")
+    T = comp_threshold(model, val_loader, device)
+    print(f"Threshold T = {T:.6f}")
 
     return model, T
 
-def comp_entropy(i):
-    B = i.size(0)           # B is batch size
-    i = i.view(B, -1)       # flatten the image
-
-    x_min = x.min(dim=1, keepdim=True)[0] #normalize
-    x_max = x.max(dim=1, keepdim=True)[0]
-    x = (x - x_min) / (x_max - x_min + 1e-8)
-
-    entropies = []
-    for i in range(B):
-        hist = torch.histc(x[i], bins=256, min=0, max=1)
-        p = hist / torch.sum(hist)
-        ent = -torch.sum(p * torch.log(p + 1e-8))
-        entropies.append(ent)
-
-    return torch.stack(entropies)
+def comp_entropy(x):
+    # Shannon entropy: information theory measures randomness
+        # H(X) = - \sum^n_{i=1} P(x_i) log_2 P(x_i)
+    B = x.shape[0]
+    x = x.view(B, -1)
+    p_x = torch.softmax(x, dim=1)
+    H = - (p_x * torch.log2(p_x)).sum(dim=1)
+    return H
     
-def comp_threshold(model, val_loader):
+def comp_threshold(model, val_loader, device):
     model.eval()
 
     entropy_list = []
@@ -72,13 +73,13 @@ def comp_threshold(model, val_loader):
 
     with torch.no_grad():
         for I, I_cor, labels in val_loader:
-            I = I.to(DEVICE)
+            I = I.to(device)
 
             P_hat = model(I)
-            ent = compute_entropy_batch(P_hat)
-
-            all_entropy.extend(ent.cpu().numpy())
-            all_labels.extend(labels.numpy())
+            ent = comp_entropy(P_hat)
+            # tensors to np and add
+            entropy_list += ent.detach().cpu().tolist()
+            labels_list += labels.detach().cpu().tolist()
     
     entropy_list = np.array(entropy_list)
     labels_list = np.array(labels_list)
@@ -90,28 +91,108 @@ def comp_threshold(model, val_loader):
 
     return T
 
+def detect(model, dataloader, T, device):
+    model.eval()
+    pred_vals = []
+
+    with torch.no_grad():
+        for I, _, _ in dataloader:
+            I = I.to(device)
+
+            P_hat = model(I)
+            ent = comp_entropy(P_hat)
+
+            pred = (ent > T).int()
+            pred_vals.extend(pred.cpu().numpy())
+
+    return np.array(pred_vals)
+
+# create the dataset to train lightshed with
+class LightShedDataset(Dataset):
+    def __init__(self, clean_dir, poisoned_dir):
+        self.clean_dir = clean_dir
+        self.poisoned_dir = poisoned_dir
+
+        self.clean_files = sorted(os.listdir(clean_dir))
+        self.poisoned_files = sorted(os.listdir(poisoned_dir))
+        self.transform = T.Compose([T.Resize((256, 256)),
+                                    T.ToTensor()])
+
+        self.data = []
+
+        for f in self.clean_files:
+            self.data.append(("clean", f))
+
+        for f in self.poisoned_files:
+            self.data.append(("poisoned", f))
+
+    # def load_p(self, path):
+    #     with open(path, "rb") as f:
+    #         img = pickle.load(f)
+
+    #     img = torch.tensor(img, dtype=torch.float32)
+
+    #     if img.ndim == 2:
+    #         img = img.unsqueeze(0)
+
+    #     return img
+
+    def load_p(self, path):
+        with open(path, "rb") as f:
+            data = pickle.load(f)
+        
+        # print(data)
+        img = data["img"] 
+        # print(type(img))
+        if isinstance(img, np.ndarray):
+            img = Image.fromarray(img.astype(np.uint8))
+
+        # img = self.transform(img)   
+        # img = Image.fromarray(img.astype(np.uint8))
+
+        return img
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        label_type, fname = self.data[idx]
+
+        if label_type == "clean":
+            I = self.load_p(os.path.join(self.clean_dir, fname))
+            I_cor = I.copy()
+            is_clean = 1
+        else:
+            I = self.load_p(os.path.join(self.poisoned_dir, fname))
+            I_cor = self.load_p(os.path.join(self.clean_dir, fname))
+            is_clean = 0
+        I = self.transform(I)
+        I_cor = self.transform(I_cor)
+        return I, I_cor, torch.tensor(is_clean, dtype=torch.float32)
 
 
 
-
-
+if __name__ == "__main__":
     
+    clean_dir = "data/clean"
+    pois_dir = "data/poisoned"
 
-    
+    dataset = LightShedDataset(clean_dir, pois_dir)
+    train_size = int(0.7 * len(dataset))
+    val_size = int(0.15 * len(dataset))
+    test_size = len(dataset) - train_size - val_size
+    train_set, val_set, test_set = random_split(dataset, [train_size, val_size, test_size])
+    train_loader = DataLoader(train_set, batch_size=hp.BATCH_SIZE, shuffle=True)
+    val_loader = DataLoader(val_set, batch_size=hp.BATCH_SIZE, shuffle=False)
+    test_loader = DataLoader(test_set, batch_size=hp.BATCH_SIZE, shuffle=False)
 
-    
-
-
-
-
-
-
-
-
-
+    model, T = train(train_loader, val_loader)
 
 
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    # pred_vals = detect(model, test_loader, T, device)
 
+    clean_images, is_poisoned, p_prime = perform_inference(model, T, test_loader, device)
     # model = LightShedAE from models.py
     # loss_fn = LightShedLoss from lightshed_loss.py
     
