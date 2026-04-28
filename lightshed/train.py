@@ -15,6 +15,7 @@ from torch.utils.data import Dataset
 from sklearn.metrics import roc_curve
 from PIL import Image
 import torchvision.transforms as T
+from inference import perform_inference
 
 import hyperparameters as hp
 
@@ -187,9 +188,11 @@ if __name__ == "__main__":
 
     model, T = train(train_loader, val_loader)
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    pred_vals = detect(model, test_loader, T, device)
 
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    # pred_vals = detect(model, test_loader, T, device)
+
+    clean_images, is_poisoned, p_prime = perform_inference(model, T, test_loader, device)
     # model = LightShedAE from models.py
     # loss_fn = LightShedLoss from lightshed_loss.py
     
