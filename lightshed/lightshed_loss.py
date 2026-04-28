@@ -1,5 +1,6 @@
 
 import torch.nn as nn
+import torch
 
 class LightShedLoss(nn.Module):
     def __init__(self, psi=0.01, tau=100):
