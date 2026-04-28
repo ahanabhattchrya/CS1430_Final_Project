@@ -56,6 +56,10 @@ class Decoder(nn.Module):
         ###### block 4 ######
 
         d4 = self.dec4(bottle_out)
+        print(d4.shape)
+        print(f4.shape)
+        print(bottle_out.shape)
+        
         attn4 = self.attn4(f4, bottle_out)
         d4 = d4 * attn4
 
@@ -93,7 +97,7 @@ class LightShedAE(nn.Module):
         # in_chan = bottleneck out_chan
         self.decoder = Decoder(1024)
     
-    def foward(self, x):
+    def forward(self, x):
         features = self.encoder(x) #[f1, f2, f3, f4]
         z = self.bottleneck(features[-1])
         return self.decoder(z, features)

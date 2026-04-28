@@ -13,6 +13,7 @@ import pickle
 import numpy as np
 from torch.utils.data import Dataset
 from sklearn.metrics import roc_curve
+import torchvision.transforms as T
 
 import hyperparameters as hp
 
@@ -21,8 +22,6 @@ def train(train_loader, val_loader):
     model = LightShedAE().to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=hp.LR)
     loss_fn = LightShedLoss()
-
-    
 
     for epoch in range(hp.EPOCHS):
 
@@ -106,7 +105,7 @@ def detect(model, dataloader, T, device):
 
     return np.array(pred_vals)
 
-
+# create the dataset to train lightshed with
 class LightShedDataset(Dataset):
     def __init__(self, clean_dir, poisoned_dir):
         self.clean_dir = clean_dir
@@ -123,14 +122,25 @@ class LightShedDataset(Dataset):
         for f in self.poisoned_files:
             self.data.append(("poisoned", f))
 
+    # def load_p(self, path):
+    #     with open(path, "rb") as f:
+    #         img = pickle.load(f)
+
+    #     img = torch.tensor(img, dtype=torch.float32)
+
+    #     if img.ndim == 2:
+    #         img = img.unsqueeze(0)
+
+    #     return img
+
     def load_p(self, path):
         with open(path, "rb") as f:
-            img = pickle.load(f)
-
-        img = torch.tensor(img, dtype=torch.float32)
-
-        if img.ndim == 2:
-            img = img.unsqueeze(0)
+            data = pickle.load(f)
+        
+        # print(data)
+        img = data["img"] 
+        transform = T.ToTensor()
+        img = transform(img)   
 
         return img
 

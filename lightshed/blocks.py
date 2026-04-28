@@ -47,6 +47,7 @@ class AttentionBlock(nn.Module):
     # HELP section 4.3, above algorithm 1 area-ish
     # (enc feat map, dec signal prev layer) -> attention map
     def __init__(self, in_chan, gate_chan, out_chan):
+        super().__init__()
         self.enc_feat = nn.Conv2d(in_chan, out_chan, kernel_size=1) # kernel size ?
         self.gating = nn.Conv2d(gate_chan, out_chan, kernel_size=1)
         self.attn_map = nn.Conv2d(in_chan, 1, kernel_size=1)
