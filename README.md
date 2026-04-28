@@ -39,6 +39,11 @@ view_images.py (view 100 clean v. poisoned images side by side)
 ```
 python view_images.py --input_dir selected_data --output_dir poisoned_outputs
 ```
+visualize histogram for CLIP score comparison between clean-cat and poisoned-cat
+```
+python clip_test.py # generates results/clip_histogram.png
+```
+
 ## Lightshed
 oscar for Lightshed training (~6 mins)
 ``` 
