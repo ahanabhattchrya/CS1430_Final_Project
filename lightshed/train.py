@@ -13,6 +13,7 @@ import pickle
 import numpy as np
 from torch.utils.data import Dataset
 from sklearn.metrics import roc_curve
+from PIL import Image
 import torchvision.transforms as T
 
 import hyperparameters as hp
@@ -113,6 +114,8 @@ class LightShedDataset(Dataset):
 
         self.clean_files = sorted(os.listdir(clean_dir))
         self.poisoned_files = sorted(os.listdir(poisoned_dir))
+        self.transform = T.Compose([T.Resize((256, 256)),
+                                    T.ToTensor()])
 
         self.data = []
 
@@ -139,8 +142,12 @@ class LightShedDataset(Dataset):
         
         # print(data)
         img = data["img"] 
-        transform = T.ToTensor()
-        img = transform(img)   
+        # print(type(img))
+        if isinstance(img, np.ndarray):
+            img = Image.fromarray(img.astype(np.uint8))
+
+        # img = self.transform(img)   
+        # img = Image.fromarray(img.astype(np.uint8))
 
         return img
 
@@ -152,13 +159,14 @@ class LightShedDataset(Dataset):
 
         if label_type == "clean":
             I = self.load_p(os.path.join(self.clean_dir, fname))
-            I_cor = I.clone()
+            I_cor = I.copy()
             is_clean = 1
         else:
             I = self.load_p(os.path.join(self.poisoned_dir, fname))
             I_cor = self.load_p(os.path.join(self.clean_dir, fname))
             is_clean = 0
-
+        I = self.transform(I)
+        I_cor = self.transform(I_cor)
         return I, I_cor, torch.tensor(is_clean, dtype=torch.float32)
 
 
