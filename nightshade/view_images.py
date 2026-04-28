@@ -124,19 +124,19 @@ class PairViewer:
             self.axes[1, col].imshow(out_img)
             self.axes[1, col].set_title(f"{out_idx}", fontsize=7)
 
-        self.axes[0, 0].set_ylabel("Input Images", fontsize=12)
-        self.axes[1, 0].set_ylabel("Poisoned Output Images", fontsize=12)
+        self.axes[0, 0].set_ylabel("Clean", fontsize=12)
+        self.axes[1, 0].set_ylabel("Poisoned", fontsize=12)
 
-        self.fig.text(0.1, 0.72, "Input", rotation=90,
+        self.fig.text(0.1, 0.72, "Clean", rotation=90,
                       fontsize=12, va="center", ha="center")
 
-        self.fig.text(0.1, 0.28, "Poisoned Output", rotation=90,
+        self.fig.text(0.1, 0.28, "Poisoned", rotation=90,
                       fontsize=12, va="center", ha="center")
 
         mode = "JSON Mapping" if self.use_json else "Index Matching"
 
         self.fig.suptitle(
-            f"Clean Input - Filtered Output Pairs | {mode} | "
+            f"Clean and Poisoned Image Pairs | {mode} | "
             f"Page {self.page + 1}/{self.total_pages}",
             fontsize=13
         )

@@ -35,7 +35,6 @@ class PoisonGeneration(object):
         )
         pipeline = pipeline.to(self.device)
 
-
         pipeline.vae = pipeline.vae.float()
         pipeline.unet = pipeline.unet.float()
 
