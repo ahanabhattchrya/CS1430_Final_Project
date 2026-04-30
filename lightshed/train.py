@@ -12,7 +12,7 @@ import os
 import pickle
 import numpy as np
 from torch.utils.data import Dataset
-from sklearn.metrics import roc_curve
+from sklearn.metrics import roc_curve, roc_auc_score
 from PIL import Image
 import torchvision.transforms as T
 from inference import perform_inference
@@ -59,11 +59,14 @@ def train(train_loader, val_loader):
 def comp_entropy(x):
     # Shannon entropy: information theory measures randomness
         # H(X) = - \sum^n_{i=1} P(x_i) log_2 P(x_i)
-    B = x.shape[0]
-    x = x.view(B, -1)
-    p_x = torch.softmax(x, dim=1)
-    H = - (p_x * torch.log2(p_x)).sum(dim=1)
-    return H
+    eps = 1e-8
+    # normalize per-sample BEFORE softmax
+    x_norm = (x - x.mean(dim=(1,2,3), keepdim=True)) / (x.std(dim=(1,2,3), keepdim=True) + eps)
+    # B = x.shape[0]
+    # x = x.view(B, -1)
+    p_x = torch.softmax(x_norm, dim=1)
+    H = - (p_x * torch.log(p_x + eps)).sum(dim=1)
+    return H.mean(dim=(1, 2))
     
 def comp_threshold(model, val_loader, device):
     model.eval()
@@ -73,6 +76,7 @@ def comp_threshold(model, val_loader, device):
 
     with torch.no_grad():
         for I, I_cor, labels in val_loader:
+            # clean = 1, poisoned = 0
             I = I.to(device)
 
             P_hat = model(I)
@@ -83,13 +87,21 @@ def comp_threshold(model, val_loader, device):
     
     entropy_list = np.array(entropy_list)
     labels_list = np.array(labels_list)
+    
+    
+    plabels_list = 1 - labels_list
+    print("poison entropy mean:", entropy_list[plabels_list == 1].mean())
+    print("clean entropy mean:", entropy_list[plabels_list == 0].mean())
+    auc = roc_auc_score(plabels_list, entropy_list)
+    print(f'auc: {auc}')
 
-    fpr, tpr, thresholds = roc_curve(labels_list, entropy_list)
-
+    fpr, tpr, thresholds = roc_curve(plabels_list, entropy_list)
+    # valid = np.where(fpr >= 0.1)[0]
+    # best_T = thresholds[valid[np.argmax(tpr[valid])]]
     best_T = np.argmax(tpr - fpr)
-    T = thresholds[best_T]
-
-    return T
+    T_ = thresholds[best_T]
+    
+    return T_
 
 def detect(model, dataloader, T, device):
     model.eval()
@@ -186,13 +198,11 @@ if __name__ == "__main__":
     val_loader = DataLoader(val_set, batch_size=hp.BATCH_SIZE, shuffle=False)
     test_loader = DataLoader(test_set, batch_size=hp.BATCH_SIZE, shuffle=False)
 
-    model, T = train(train_loader, val_loader)
+    model, T_ = train(train_loader, val_loader)
 
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     # pred_vals = detect(model, test_loader, T, device)
 
-    clean_images, is_poisoned, p_prime = perform_inference(model, T, test_loader, device)
-    # model = LightShedAE from models.py
-    # loss_fn = LightShedLoss from lightshed_loss.py
-    
+    clean_images, orig_img, is_poisoned, p_prime = perform_inference(model, T_, test_loader, device)
+

@@ -23,3 +23,6 @@ __pycache__/
 *.log
 .env
 .cache/
+
+
+debug_algo1.py
