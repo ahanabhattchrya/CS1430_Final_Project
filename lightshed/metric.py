@@ -90,7 +90,48 @@ def compute_entropy_from_data(data):
     ent_recon = comp_entropy(recon)
 
     return ent_true.detach().cpu().numpy(), ent_recon.detach().cpu().numpy()
+
+def plot1(data, ssim_scores, entropies):
+    fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+    true_labels = data['true_labels']
+    clean_color = "steelblue"
+    poison_color = "darkorange"
     
+    poison_mask = true_labels == 1
+    clean_mask = true_labels == 0
+
+    ax.scatter(
+        ssim_scores[clean_mask],
+        entropies[clean_mask],
+        c=clean_color,
+        label="Clean",
+        alpha=0.6,
+        edgecolors="k",
+        linewidths=0.3
+    )
+
+    ax.scatter(
+        ssim_scores[poison_mask],
+        entropies[poison_mask],
+        c=poison_color,
+        label="Poisoned",
+        alpha=0.6,
+        edgecolors="k",
+        linewidths=0.3
+    )
+
+    tau_ent = 0.924101
+    ax.axhline(tau_ent, linestyle="--", color="gray", label=r"$\tau_{ENT}$")
+
+    ax.set_xlabel("SSIM (reconstruction vs reference)")
+    ax.set_ylabel("Entropy (reconstruction)")
+    ax.set_title("A. SSIM–Entropy Decision Plane")
+
+    ax.legend(loc="best", frameon=True)
+    plt.savefig('results/ent_vs_ssim.png')
+    plt.show()
+
+
 def plot_metrics(ssim_vals, entropy_diff, pred_labels, true_labels):
     entropy_diff = np.array(entropy_diff)
     ssim_vals = np.array(ssim_vals)
@@ -168,6 +209,87 @@ def plot_subset(ax, entropy, ssim, correct, title):
     ax.set_ylabel("Value")
     ax.grid(alpha=0.3)
 
+
+def entr_dist(data, entropies):
+    fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+    true_labels = data['true_labels']
+    clean_color = "steelblue"
+    poison_color = "darkorange"
+    
+    poison_mask = true_labels == 1
+    clean_mask = true_labels == 0
+
+    
+
+    bins = np.linspace(min(entropies), max(entropies), 40)
+
+    ax.hist(
+        entropies[clean_mask],
+        bins=bins,
+        color=clean_color,
+        alpha=0.5,
+        density=True,
+        label="Clean"
+    )
+
+    ax.hist(
+        entropies[poison_mask],
+        bins=bins,
+        color=poison_color,
+        alpha=0.5,
+        density=True,
+        label="Poisoned"
+    )
+    tau_ent = 0.924101
+    ax.axvline(tau_ent, color="black", linestyle="--", linewidth=1)
+
+    ax.set_xlabel("Entropy")
+    ax.set_ylabel("Density")
+    ax.set_title("C. Entropy Distribution")
+
+    ax.legend(frameon=True)
+    plt.savefig('results/entropy_distribution.png')
+    plt.show()
+
+def ssim_dist(data, ssim_scores):
+    true_labels = data['true_labels']
+    clean_color = "steelblue"
+    poison_color = "darkorange"
+    
+    poison_mask = true_labels == 1
+    clean_mask = true_labels == 0
+
+    fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+
+
+    bins = np.linspace(min(ssim_scores), max(ssim_scores), 40)
+
+    ax.hist(
+        ssim_scores[clean_mask],
+        bins=bins,
+        color=clean_color,
+        alpha=0.5,
+        density=True,
+        label="Clean"
+    )
+
+    ax.hist(
+        ssim_scores[poison_mask],
+        bins=bins,
+        color=poison_color,
+        alpha=0.5,
+        density=True,
+        label="Poisoned"
+    )
+
+    ax.set_xlabel("SSIM")
+    ax.set_ylabel("Density")
+    ax.set_title("B. SSIM Distribution")
+
+    ax.legend(frameon=True)
+    plt.savefig('results/ssim_distribution.png')
+    plt.show()
+
 if __name__ == "__main__":
     data = np.load('inference_outputs.npz')
     print(len(data['true_labels']))
@@ -175,8 +297,14 @@ if __name__ == "__main__":
     ssim_scores = ssim_score(data)
     n = len(ssim_scores)
     ent_true, ent_recon = compute_entropy_from_data(data)
-    entropy_diff = np.abs(ent_true - ent_recon) 
 
-    plot_metrics(ssim_scores, entropy_diff, data['is_poisoned'], data['true_labels'])
+    # plot_metrics(ssim_scores, ent_recon, data['is_poisoned'], data['true_labels'])
+    plot1(data, ssim_scores, ent_recon)
+    entr_dist(data, ent_recon)
+    ssim_dist(data, ssim_scores)
     # plot(data)
     # ssim_score(data)
+    # poison entropy mean: 0.9005881627400716
+    # clean entropy mean: 0.8972086509068807
+    # auc: 0.5377777777777778
+    # Threshold T = 0.924101
