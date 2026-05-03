@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-
+# from nightshade import clip_test
 
 
 def create_comp(data):
@@ -50,7 +50,62 @@ def create_comp(data):
         plt.imshow(normalize(to_img(poison)))
         plt.axis("off")
         plt.tight_layout()
-    plt.savefig(f'inf_plot.png')
+    # plt.savefig(f'testinf_plot.png')
+    plt.show()
+
+
+def real_recon_poison(data):
+    orig_imgs = data['orig_img']
+    input_imgs = data["input_img"]
+    clean_imgs = data['clean_images']
+    p_recon = data['p_prime']
+    true_label = data['true_labels']
+
+    n = 8
+    plt.figure(figsize=(12, 3 * n))
+
+    for i in range(n):
+        idx = i
+
+        orig = orig_imgs[idx]
+        inp = input_imgs[idx]
+        recon_poison = p_recon[idx]
+        clean = clean_imgs[idx]
+        label = true_label[idx]
+
+        # compute true poison
+        true_poison = inp - orig
+        depoisoned_poison = clean - orig
+
+        # Col 1: original clean image
+        plt.subplot(n, 4, i * 4 + 1)
+        plt.title("Orig Clean")
+        plt.imshow(to_img(orig))
+        plt.axis("off")
+
+        # Col 2: poisoned input
+        plt.subplot(n, 4, i * 4 + 2)
+        plt.title(f"Input: True Label ({int(label)})")
+        plt.imshow(to_img(inp))
+        plt.axis("off")
+
+        # Col 3: true poison
+        plt.subplot(n, 4, i * 4 + 3)
+        plt.title("True Poison")
+        plt.imshow(normalize(to_img(true_poison)))
+        plt.axis("off")
+
+        # Col 4: reconstructed poison
+        plt.subplot(n, 4, i * 4 + 4)
+        plt.title("Reconstructed Poison")
+        plt.imshow(normalize(to_img(recon_poison)))
+        plt.axis("off")
+        plt.tight_layout()
+
+        # Col 5: depoisoned poison
+        
+    plt.savefig('true_recon_poison.png')
+    plt.show()
 
 def to_img(x):
     if x.shape[0] == 3:
@@ -66,4 +121,5 @@ def normalize(x):
 if __name__ == "__main__":
     data = np.load("inference_outputs.npz")
     
-    create_comp(data)
+    # create_comp(data)
+    real_recon_poison(data)
