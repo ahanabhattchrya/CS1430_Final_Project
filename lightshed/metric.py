@@ -5,8 +5,9 @@ from skimage.metrics import structural_similarity as ssim
 import matplotlib.pyplot as plt
 import torch
 import os
+import pandas as pd
 
-def accuracy_scores(data):
+def accuracy_scores(data, ent_recon):
 
     # clean_imgs = data['clean_images']
     # orig_imgs = data['orig_img']
@@ -24,7 +25,40 @@ def accuracy_scores(data):
 
     TPR = TP / (TP + FN)
     TNR = TN / (TN + FP)
+    FPR = FP / (FP+TN)
     print(acc, TPR, TNR)
+
+    auc = roc_auc_score(true_labels, ent_recon)
+
+    df = pd.DataFrame({
+    "Poison": ["Nightshade"], 
+    "Accuracy": [acc], 
+    "TPR": [TPR], 
+    "TNR": [TNR]}).round(3)
+
+    fig, ax = plt.subplots()
+    ax.axis('off')
+
+    ax.table(
+        cellText=df.values,
+        colLabels=df.columns,
+        loc='center'
+    )
+
+    plt.savefig("results/table.png", dpi=300, bbox_inches='tight')
+    plt.show()
+
+    plt.figure()
+    plt.plot(FPR, TPR, label=f"AUC = {auc:.3f}")
+    plt.plot([0, 1], [0, 1], linestyle='--')  # random baseline
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title("ROC Curve (LightShed)")
+    plt.legend()
+    plt.grid()
+    plt.savefig("roc_curve.png")   # saves to file
+    plt.close()
+    
     return acc, TPR, TNR
 
 
@@ -87,8 +121,9 @@ def compute_entropy_from_data(data):
     true_poison = inp - orig
 
     ent_true = comp_entropy(true_poison)
+    print(len(ent_true))
     ent_recon = comp_entropy(recon)
-
+    print(len(ent_recon))
     return ent_true.detach().cpu().numpy(), ent_recon.detach().cpu().numpy()
 
 def plot1(data, ssim_scores, entropies):
@@ -221,14 +256,17 @@ def entr_dist(data, entropies):
 
     
 
-    bins = np.linspace(min(entropies), max(entropies), 40)
+    num_bins = 12
+    bins = np.linspace(min(entropies), max(entropies), num_bins)
+    print('lenc',len(entropies[clean_mask]))
+    print('lenp', len(entropies[poison_mask]))
 
     ax.hist(
         entropies[clean_mask],
         bins=bins,
         color=clean_color,
         alpha=0.5,
-        density=True,
+        #density=True,
         label="Clean"
     )
 
@@ -237,18 +275,18 @@ def entr_dist(data, entropies):
         bins=bins,
         color=poison_color,
         alpha=0.5,
-        density=True,
+        #density=True,
         label="Poisoned"
     )
     tau_ent = 0.924101
-    ax.axvline(tau_ent, color="black", linestyle="--", linewidth=1)
+    ax.axvline(tau_ent, color="black", linestyle="--", linewidth=1, label=f"Cutoff (τ = {tau_ent:.3f})")
 
     ax.set_xlabel("Entropy")
-    ax.set_ylabel("Density")
-    ax.set_title("C. Entropy Distribution")
+    ax.set_ylabel("Count")
+    ax.set_title("Entropy Distribution")
 
     ax.legend(frameon=True)
-    plt.savefig('results/entropy_distribution.png')
+    # plt.savefig('results/entropy_distribution.png')
     plt.show()
 
 def ssim_dist(data, ssim_scores):
@@ -292,16 +330,17 @@ def ssim_dist(data, ssim_scores):
 
 if __name__ == "__main__":
     data = np.load('inference_outputs.npz')
-    print(len(data['true_labels']))
-    accuracy_scores(data)
-    ssim_scores = ssim_score(data)
-    n = len(ssim_scores)
+    # print(len(data['true_labels']))
     ent_true, ent_recon = compute_entropy_from_data(data)
+    accuracy_scores(data, ent_recon)
+    # ssim_scores = ssim_score(data)
+    # n = len(ssim_scores)
+    
 
     # plot_metrics(ssim_scores, ent_recon, data['is_poisoned'], data['true_labels'])
-    plot1(data, ssim_scores, ent_recon)
-    entr_dist(data, ent_recon)
-    ssim_dist(data, ssim_scores)
+    # plot1(data, ssim_scores, ent_recon)
+    # entr_dist(data, ent_recon)
+    # ssim_dist(data, ssim_scores)
     # plot(data)
     # ssim_score(data)
     # poison entropy mean: 0.9005881627400716
