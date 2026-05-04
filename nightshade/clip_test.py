@@ -64,7 +64,7 @@ def plot(clean_scores, poison_scores, save_dir="results", sort=True):
     # MEDIAN LINE (was mean)
     plt.axvline(x=np.median(clean_scores), linestyle="--", color="gray", alpha=0.5)
 
-    plt.xlabel("CLIP similarity of image to target 'cat'", fontsize=12)
+    plt.xlabel("CLIP similarity of image to target 'a photo of a cat'", fontsize=12)
     plt.ylabel("Samples (sorted by effect)" if sort else "Samples", fontsize=12)
     plt.title("Effects of Nightshade: Per-image CLIP score shift (poisoned - clean)", fontsize=14)
 
@@ -139,7 +139,7 @@ def plot_histogram(clean_scores, poison_scores, save_dir="results"):
         bbox=dict(facecolor="white", edgecolor="none", alpha=0.7)
     )
 
-    plt.xlabel("CLIP similarity between image and target 'cat")
+    plt.xlabel("CLIP similarity between image and target 'a photo of a cat'")
     plt.ylabel("Image Count (n=100)")
     plt.title("CLIP Score Distribution of Clean and Poisoned Images")
 
