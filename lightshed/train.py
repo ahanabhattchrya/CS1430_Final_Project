@@ -10,8 +10,10 @@ import os
 import pickle
 import numpy as np
 from torch.utils.data import Dataset
-from sklearn.metrics import roc_curve
+from sklearn.metrics import roc_curve, roc_auc_score
+from PIL import Image
 import torchvision.transforms as T
+from inference import perform_inference
 
 import hyperparameters as hp
 
@@ -55,11 +57,14 @@ def train(train_loader, val_loader):
 def comp_entropy(x):
     # Shannon entropy: information theory measures randomness
         # H(X) = - \sum^n_{i=1} P(x_i) log_2 P(x_i)
-    B = x.shape[0]
-    x = x.view(B, -1)
-    p_x = torch.softmax(x, dim=1)
-    H = - (p_x * torch.log2(p_x)).sum(dim=1)
-    return H
+    eps = 1e-8
+    # normalize per-sample BEFORE softmax
+    x_norm = (x - x.mean(dim=(1,2,3), keepdim=True)) / (x.std(dim=(1,2,3), keepdim=True) + eps)
+    # B = x.shape[0]
+    # x = x.view(B, -1)
+    p_x = torch.softmax(x_norm, dim=1)
+    H = - (p_x * torch.log(p_x + eps)).sum(dim=1)
+    return H.mean(dim=(1, 2))
     
 def comp_threshold(model, val_loader, device):
     model.eval()
@@ -69,6 +74,7 @@ def comp_threshold(model, val_loader, device):
 
     with torch.no_grad():
         for I, I_cor, labels in val_loader:
+            # clean = 1, poisoned = 0
             I = I.to(device)
 
             P_hat = model(I)
@@ -79,13 +85,21 @@ def comp_threshold(model, val_loader, device):
     
     entropy_list = np.array(entropy_list)
     labels_list = np.array(labels_list)
+    
+    
+    plabels_list = 1 - labels_list
+    print("poison entropy mean:", entropy_list[plabels_list == 1].mean())
+    print("clean entropy mean:", entropy_list[plabels_list == 0].mean())
+    auc = roc_auc_score(plabels_list, entropy_list)
+    print(f'auc: {auc}')
 
-    fpr, tpr, thresholds = roc_curve(labels_list, entropy_list)
-
+    fpr, tpr, thresholds = roc_curve(plabels_list, entropy_list)
+    # valid = np.where(fpr >= 0.1)[0]
+    # best_T = thresholds[valid[np.argmax(tpr[valid])]]
     best_T = np.argmax(tpr - fpr)
-    T = thresholds[best_T]
-
-    return T
+    T_ = thresholds[best_T]
+    
+    return T_
 
 # To detect poison
 def detect(model, dataloader, T, device):
@@ -112,6 +126,8 @@ class LightShedDataset(Dataset):
 
         self.clean_files = sorted(os.listdir(clean_dir))
         self.poisoned_files = sorted(os.listdir(poisoned_dir))
+        self.transform = T.Compose([T.Resize((256, 256)),
+                                    T.ToTensor()])
 
         self.data = []
 
@@ -138,8 +154,12 @@ class LightShedDataset(Dataset):
         
         # print(data)
         img = data["img"] 
-        transform = T.ToTensor()
-        img = transform(img)   
+        # print(type(img))
+        if isinstance(img, np.ndarray):
+            img = Image.fromarray(img.astype(np.uint8))
+
+        # img = self.transform(img)   
+        # img = Image.fromarray(img.astype(np.uint8))
 
         return img
 
@@ -151,13 +171,14 @@ class LightShedDataset(Dataset):
 
         if label_type == "clean":
             I = self.load_p(os.path.join(self.clean_dir, fname))
-            I_cor = I.clone()
+            I_cor = I.copy()
             is_clean = 1
         else:
             I = self.load_p(os.path.join(self.poisoned_dir, fname))
             I_cor = self.load_p(os.path.join(self.clean_dir, fname))
             is_clean = 0
-
+        I = self.transform(I)
+        I_cor = self.transform(I_cor)
         return I, I_cor, torch.tensor(is_clean, dtype=torch.float32)
 
 
@@ -176,11 +197,11 @@ if __name__ == "__main__":
     val_loader = DataLoader(val_set, batch_size=hp.BATCH_SIZE, shuffle=False)
     test_loader = DataLoader(test_set, batch_size=hp.BATCH_SIZE, shuffle=False)
 
-    model, T = train(train_loader, val_loader)
+    model, T_ = train(train_loader, val_loader)
+
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    pred_vals = detect(model, test_loader, T, device)
+    # pred_vals = detect(model, test_loader, T, device)
 
-    # model = LightShedAE from models.py
-    # loss_fn = LightShedLoss from lightshed_loss.py
-    
+    clean_images, orig_img, is_poisoned, p_prime = perform_inference(model, T_, test_loader, device)
+

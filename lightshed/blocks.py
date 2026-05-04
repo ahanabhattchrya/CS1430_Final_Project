@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class EncBlock(nn.Module):
@@ -50,14 +51,18 @@ class AttentionBlock(nn.Module):
         super().__init__()
         self.enc_feat = nn.Conv2d(in_chan, out_chan, kernel_size=1) # kernel size ?
         self.gating = nn.Conv2d(gate_chan, out_chan, kernel_size=1)
-        self.attn_map = nn.Conv2d(in_chan, 1, kernel_size=1)
+        self.attn_map = nn.Conv2d(out_chan, 1, kernel_size=1)
        
     def forward(self, x, g):
-        enc_feat = self.enc_feat(x) # feat map from encoder layer
-        gate_sig = self.gating(g) # gating signal from decoder layer
-
-        # maybe add some regularization?
-        combined = enc_feat + gate_sig # combine features
+        enc_feat = self.enc_feat(x) # feat map from encoder layer [8, 64, 256, 32]
+        gate_sig = self.gating(g) # gating signal from decoder [8, 1024, 16, 16]
+        # print('before up', gate_sig.shape)
+        # upsample the gating signal 
+        up_gate_sig = F.interpolate(gate_sig, size=enc_feat.shape[2:], mode='bilinear',)
+        # print('encfeat', enc_feat.shape)
+        # print('upsampled', up_gate_sig.shape)
+        combined = enc_feat + up_gate_sig # combine features
+        # print('combined', combined.shape)
 
         attn_map = torch.sigmoid(self.attn_map(combined)) # create attention map [0, 1] important vs not
  
