@@ -27,29 +27,6 @@ def load_paths(folder):
         key=lambda x: int(os.path.splitext(os.path.basename(x))[0])
     )
 
-def compute_significance(clean_scores, poison_scores):
-    clean_scores = np.array(clean_scores)
-    poison_scores = np.array(poison_scores)
-
-    # KS test
-    ks_stat, ks_p = ks_2samp(clean_scores, poison_scores)
-
-    # Cohen's d 
-    diff = poison_scores - clean_scores
-    pooled_std = np.std(diff) if np.std(diff) != 0 else 1e-8
-    cohens_d = np.mean(diff) / pooled_std
-
-    print("\n=== Statistical Significance ===")
-    print(f"KS statistic: {ks_stat:.4f}, p-value: {ks_p:.4e}")
-    print(f"Cohen's d (effect size): {cohens_d:.4f}")
-
-    if ks_p < 0.05:
-        print("Significant distribution shift (KS test)")
-    else:
-        print("No significant distribution shift (KS test)")
-
-    return ks_stat, ks_p, cohens_d
-
 
 def plot(clean_scores, poison_scores, save_dir="results", sort=True):
 
@@ -57,7 +34,6 @@ def plot(clean_scores, poison_scores, save_dir="results", sort=True):
 
     clean_scores = np.array(clean_scores)
     poison_scores = np.array(poison_scores)
-    compute_significance(clean_scores, poison_scores)
 
     delta = poison_scores - clean_scores
 
