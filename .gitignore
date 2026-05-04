@@ -5,6 +5,8 @@ ENV/
 hf_cache/
 __pycache__/
 
+*.npz
+
 *.pyc
 *.pyo
 *.pyd
