@@ -14,6 +14,7 @@ from sklearn.metrics import roc_curve, roc_auc_score
 from PIL import Image
 import torchvision.transforms as T
 from inference import perform_inference
+import matplotlib.pyplot as plt
 
 import hyperparameters as hp
 
@@ -94,6 +95,20 @@ def comp_threshold(model, val_loader, device):
     print(f'auc: {auc}')
 
     fpr, tpr, thresholds = roc_curve(plabels_list, entropy_list)
+
+    #visualize roc
+
+    plt.figure()
+    plt.plot(fpr, tpr, label=f"AUC = {auc:.3f}")
+    plt.plot([0, 1], [0, 1], linestyle='--')  # random baseline
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.title("ROC Curve (LightShed)")
+    plt.legend()
+    plt.grid()
+    plt.savefig("roc_curve.png")   # saves to file
+    plt.close()
+    
     # valid = np.where(fpr >= 0.1)[0]
     # best_T = thresholds[valid[np.argmax(tpr[valid])]]
     best_T = np.argmax(tpr - fpr)
