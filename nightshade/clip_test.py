@@ -27,6 +27,29 @@ def load_paths(folder):
         key=lambda x: int(os.path.splitext(os.path.basename(x))[0])
     )
 
+def compute_significance(clean_scores, poison_scores):
+    clean_scores = np.array(clean_scores)
+    poison_scores = np.array(poison_scores)
+
+    # KS test
+    ks_stat, ks_p = ks_2samp(clean_scores, poison_scores)
+
+    # Cohen's d 
+    diff = poison_scores - clean_scores
+    pooled_std = np.std(diff) if np.std(diff) != 0 else 1e-8
+    cohens_d = np.mean(diff) / pooled_std
+
+    print("\n=== Statistical Significance ===")
+    print(f"KS statistic: {ks_stat:.4f}, p-value: {ks_p:.4e}")
+    print(f"Cohen's d (effect size): {cohens_d:.4f}")
+
+    if ks_p < 0.05:
+        print("Significant distribution shift (KS test)")
+    else:
+        print("No significant distribution shift (KS test)")
+
+    return ks_stat, ks_p, cohens_d
+
 
 def plot(clean_scores, poison_scores, save_dir="results", sort=True):
 
@@ -34,6 +57,7 @@ def plot(clean_scores, poison_scores, save_dir="results", sort=True):
 
     clean_scores = np.array(clean_scores)
     poison_scores = np.array(poison_scores)
+    compute_significance(clean_scores, poison_scores)
 
     delta = poison_scores - clean_scores
 
@@ -48,7 +72,6 @@ def plot(clean_scores, poison_scores, save_dir="results", sort=True):
     plt.figure(figsize=(10, 6))
     plt.style.use("default")
 
-    # draw connecting lines
     for i in range(len(idx)):
         color = "#2ca02c" if delta[i] > 0 else "#d62728"
         plt.plot(
@@ -62,7 +85,8 @@ def plot(clean_scores, poison_scores, save_dir="results", sort=True):
     plt.scatter(clean_scores, idx, color="#1f77b4", s=40, label="clean → target", zorder=3)
     plt.scatter(poison_scores, idx, color="#ff7f0e", s=40, label="poison → target", zorder=3)
 
-    plt.axvline(x=np.mean(clean_scores), linestyle="--", color="gray", alpha=0.5)
+    # MEDIAN LINE (was mean)
+    plt.axvline(x=np.median(clean_scores), linestyle="--", color="gray", alpha=0.5)
 
     plt.xlabel("CLIP similarity of image to target 'cat'", fontsize=12)
     plt.ylabel("Samples (sorted by effect)" if sort else "Samples", fontsize=12)
@@ -92,6 +116,7 @@ def plot(clean_scores, poison_scores, save_dir="results", sort=True):
 
     print(f"Saved: {save_path}")
 
+
 def plot_histogram(clean_scores, poison_scores, save_dir="results"):
     os.makedirs(save_dir, exist_ok=True)
 
@@ -109,17 +134,17 @@ def plot_histogram(clean_scores, poison_scores, save_dir="results"):
     plt.hist(clean_scores, bins=bins, alpha=0.35, color="#1f77b4", label="Clean (counts)")
     plt.hist(poison_scores, bins=bins, alpha=0.35, color="#ff7f0e", label="Poison (counts)")
 
-    # --- means ---
-    clean_mean = clean_scores.mean()
-    poison_mean = poison_scores.mean()
+    # --- MEDIANS (was mean) ---
+    clean_median = np.median(clean_scores)
+    poison_median = np.median(poison_scores)
 
-    plt.axvline(clean_mean, linestyle="--", color="#1f77b4", linewidth=2)
-    plt.axvline(poison_mean, linestyle="--", color="#ff7f0e", linewidth=2)
+    plt.axvline(clean_median, linestyle="--", color="#1f77b4", linewidth=2)
+    plt.axvline(poison_median, linestyle="--", color="#ff7f0e", linewidth=2)
 
     plt.text(
-        clean_mean,
+        clean_median,
         plt.ylim()[1] * 0.85,
-        f"clean mean = {clean_mean:.3f}",
+        f"clean median = {clean_median:.3f}",
         color="#1f77b4",
         rotation=0,
         ha="left",
@@ -128,9 +153,9 @@ def plot_histogram(clean_scores, poison_scores, save_dir="results"):
     )
 
     plt.text(
-        poison_mean,
+        poison_median,
         plt.ylim()[1] * 0.70,
-        f"poison mean = {poison_mean:.3f}",
+        f"poison median = {poison_median:.3f}",
         color="#ff7f0e",
         rotation=0,
         ha="left",
@@ -138,8 +163,6 @@ def plot_histogram(clean_scores, poison_scores, save_dir="results"):
         bbox=dict(facecolor="white", edgecolor="none", alpha=0.7)
     )
 
-
-    # --- axes ---
     plt.xlabel("CLIP similarity between image and target 'cat")
     plt.ylabel("Image Count (n=100)")
     plt.title("CLIP Score Distribution of Clean and Poisoned Images")
@@ -152,6 +175,7 @@ def plot_histogram(clean_scores, poison_scores, save_dir="results"):
     plt.close()
 
     print(f"Saved: {save_path}")
+
 
 def run(clean_folder, poison_folder, target_text, device="cuda"):
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -194,14 +218,13 @@ def run(clean_folder, poison_folder, target_text, device="cuda"):
     poison_scores = np.array(poison_scores)
 
     print("\n=== CLIP Evaluation ===")
-    print("Avg clean → target:", clean_scores.mean())
-    print("Avg poison → target:", poison_scores.mean())
-    print("Improvement:", (poison_scores - clean_scores).mean())
+    print("Median clean → target:", np.median(clean_scores))
+    print("Median poison → target:", np.median(poison_scores))
+    print("Median improvement:", np.median(poison_scores - clean_scores))
     print("Fraction improved:", (poison_scores > clean_scores).mean())
 
     plot(clean_scores, poison_scores)
     plot_histogram(clean_scores, poison_scores)
-    compute_significance(clean_scores, poison_scores)
 
 
 if __name__ == "__main__":
