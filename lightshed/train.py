@@ -1,7 +1,5 @@
 # i think algorithm 2 should live here?
 # implments models and lightshed_loss 
-
-
 from models import Encoder, LightShedAE
 import torch
 import torch.nn as nn
@@ -89,6 +87,7 @@ def comp_threshold(model, val_loader, device):
 
     return T
 
+# To detect poison
 def detect(model, dataloader, T, device):
     model.eval()
     pred_vals = []
