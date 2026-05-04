@@ -27,7 +27,7 @@ def accuracy_scores(data, ent_recon):
     TNR = TN / (TN + FP)
     FPR = FP / (FP+TN)
     print(acc, TPR, TNR)
-
+    fpr, tpr, thresh = roc_curve(true_labels, ent_recon)
     auc = roc_auc_score(true_labels, ent_recon)
 
     df = pd.DataFrame({
@@ -49,7 +49,7 @@ def accuracy_scores(data, ent_recon):
     plt.show()
 
     plt.figure()
-    plt.plot(FPR, TPR, label=f"AUC = {auc:.3f}")
+    plt.plot(fpr, tpr, label=f"AUC = {auc:.3f}")
     plt.plot([0, 1], [0, 1], linestyle='--')  # random baseline
     plt.xlabel("False Positive Rate")
     plt.ylabel("True Positive Rate")
@@ -121,9 +121,9 @@ def compute_entropy_from_data(data):
     true_poison = inp - orig
 
     ent_true = comp_entropy(true_poison)
-    print(len(ent_true))
+    # print(len(ent_true))
     ent_recon = comp_entropy(recon)
-    print(len(ent_recon))
+    # print(len(ent_recon))
     return ent_true.detach().cpu().numpy(), ent_recon.detach().cpu().numpy()
 
 def plot1(data, ssim_scores, entropies):
@@ -332,6 +332,7 @@ if __name__ == "__main__":
     data = np.load('inference_outputs.npz')
     # print(len(data['true_labels']))
     ent_true, ent_recon = compute_entropy_from_data(data)
+    print(len(ent_recon))
     accuracy_scores(data, ent_recon)
     # ssim_scores = ssim_score(data)
     # n = len(ssim_scores)
