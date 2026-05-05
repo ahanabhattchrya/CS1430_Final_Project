@@ -40,59 +40,54 @@ def compute_scores(folder, model, preprocess, text_features, device):
         np.array(poison)
     )
 
-
-# ----------------------------
-# DUMBBELL PLOT (3 POINTS)
-# ----------------------------
-def plot_dumbbells(clean, depoison, poison, max_samples=50, save_path=None):
+def plot_points(clean, depoison, poison, max_samples=3, save_path=None):
     n = min(len(clean), max_samples)
-    idx = np.arange(n)
 
-    plt.figure(figsize=(10, 6))
+    clean = clean[:n]
+    depoison = depoison[:n]
+    poison = poison[:n]
+
+    order = [1, 2, 0][:n]
+
+    clean = clean[order]
+    poison = poison[order]
+    depoison = depoison[order]
+
+    plt.figure(figsize=(8, 5))
+
+    x_clean = np.arange(n) - 0.2
+    x_poi = np.arange(n)
+    x_dep = np.arange(n) + 0.2
+
+    plt.scatter(x_clean, clean, color="#4ee040", s=80, label="Clean")
+    plt.scatter(x_poi, poison, color="#9b0d0d", s=80, label="Poisoned")
+    plt.scatter(x_dep, depoison, color="#f0aa53", s=80, label="Depoisoned")
 
     for i in range(n):
-        # lines connecting all 3 states
         plt.plot(
-            [clean[i], depoison[i], poison[i]],
-            [i, i, i],
+            [x_clean[i], x_poi[i], x_dep[i]],
+            [clean[i], poison[i], depoison[i]],
             color="gray",
-            alpha=0.5,
-            linewidth=2
+            alpha=0.5
         )
 
-    # scatter points
-    plt.scatter(clean[:n], idx, label="Clean", color="#4ee040", s=40)
-    plt.scatter(depoison[:n], idx, label="Depoisoned", color="#f0aa53", s=40)
-    plt.scatter(poison[:n], idx, label="Poisoned", color="#9b0d0d", s=40)
-
-    # # mean reference lines
-    # plt.axvline(clean.mean(), color="#1f77b4", linestyle="--")
-    # plt.axvline(depoison.mean(), color="#2ca02c", linestyle="--")
-    # plt.axvline(poison.mean(), color="#ff7f0e", linestyle="--")
-    plt.yticks(idx, ["0", "1", "2"][:n])
-    plt.xlabel("CLIP similarity to target ('a photo of a cat')")
-    plt.ylabel("Image index")
-    plt.title("Per-sample CLIP Shift: Clean → Depoisoned → Poisoned")
+    plt.xticks(np.arange(n), [str(i) for i in order])
+    plt.xlabel("Image index (reordered)")
+    plt.ylabel("CLIP similarity to target ('a photo of a cat')")
+    plt.title("CLIP Similarity (Clean → Poison → Depoison)")
 
     plt.legend()
+    plt.grid(alpha=0.3)
     plt.tight_layout()
+
     if save_path is not None:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         plt.savefig(save_path, dpi=300, bbox_inches="tight")
         print(f"Saved plot to: {save_path}")
 
     plt.show()
-    plt.show()
-
-    print("\n=== Means ===")
-    print("Clean:", clean.mean())
-    print("Depoisoned:", depoison.mean())
-    print("Poisoned:", poison.mean())
 
 
-# ----------------------------
-# MAIN
-# ----------------------------
 def run(folder="filtered_outputs", device="cuda"):
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -107,7 +102,7 @@ def run(folder="filtered_outputs", device="cuda"):
         folder, model, preprocess, text_features, device
     )
 
-    plot_dumbbells(clean, depoison, poison, save_path="results/clip2.png")
+    plot_points(clean, depoison, poison, save_path="results/clip2.png")
 
 
 if __name__ == "__main__":
