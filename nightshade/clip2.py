@@ -53,30 +53,47 @@ def plot_points(clean, depoison, poison, max_samples=3, save_path=None):
     poison = poison[order]
     depoison = depoison[order]
 
-    plt.figure(figsize=(8, 5))
+    plt.figure(figsize=(10, 5))
 
-    x_clean = np.arange(n) - 0.2
-    x_poi = np.arange(n)
-    x_dep = np.arange(n) + 0.2
-
-    plt.scatter(x_clean, clean, color="#4ee040", s=80, label="Clean")
-    plt.scatter(x_poi, poison, color="#9b0d0d", s=80, label="Poisoned")
-    plt.scatter(x_dep, depoison, color="#f0aa53", s=80, label="Depoisoned")
+    x = []
+    y = []
+    labels = []
+    colors = []
 
     for i in range(n):
+        idx = order[i]
+
+        x.append(len(x))
+        y.append(clean[i])
+        labels.append(f"{i}-clean")
+        colors.append("#4ee040")
+
+        x.append(len(x))
+        y.append(poison[i])
+        labels.append(f"{i}-poisoned")
+        colors.append("#9b0d0d")
+
+        x.append(len(x))
+        y.append(depoison[i])
+        labels.append(f"{i}-depoisoned")
+        colors.append("#f0aa53")
+
+    plt.scatter(x, y, c=colors, s=80)
+
+    for i in range(n):
+        base = i * 3
         plt.plot(
-            [x_clean[i], x_poi[i], x_dep[i]],
-            [clean[i], poison[i], depoison[i]],
+            [base, base + 1, base + 2],
+            [y[base], y[base + 1], y[base + 2]],
             color="gray",
             alpha=0.5
         )
 
-    plt.xticks(np.arange(n), [str(i) for i in order])
-    plt.xlabel("Image Index")
+    plt.xticks(x, labels, rotation=45, ha="right")
+    plt.xlabel("Image (Index-Condition)")
     plt.ylabel("CLIP similarity to target ('a photo of a cat')")
-    plt.title("CLIP Similarity (Clean → Poison → Depoisoned)")
+    plt.title("CLIP Similarity per Image (Clean → Poison → Depoisoned)")
 
-    plt.legend()
     plt.grid(alpha=0.3)
     plt.tight_layout()
 
