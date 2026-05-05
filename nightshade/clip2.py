@@ -72,9 +72,9 @@ def plot_points(clean, depoison, poison, max_samples=3, save_path=None):
         )
 
     plt.xticks(np.arange(n), [str(i) for i in order])
-    plt.xlabel("Image index (reordered)")
+    plt.xlabel("Image Index")
     plt.ylabel("CLIP similarity to target ('a photo of a cat')")
-    plt.title("CLIP Similarity (Clean → Poison → Depoison)")
+    plt.title("CLIP Similarity (Clean → Poison → Depoisoned)")
 
     plt.legend()
     plt.grid(alpha=0.3)
