@@ -11,7 +11,6 @@ def load_npz(path):
 
 
 def to_clip_tensor(img, preprocess, device):
-    # assumes img is PIL or numpy HWC uint8
     if isinstance(img, np.ndarray):
         img = Image.fromarray(img.astype(np.uint8))
     return preprocess(img).unsqueeze(0).to(device)
@@ -68,7 +67,6 @@ def run(npz_path, target_text, device="cuda"):
         text_features = model.encode_text(text_tokens)
         text_features = text_features / text_features.norm(dim=-1, keepdim=True)
 
-    # split poisoned subset
     poison_mask = data["is_poisoned"].astype(bool)
 
     orig_imgs = data["orig_img"]
