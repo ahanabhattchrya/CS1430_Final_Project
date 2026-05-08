@@ -16,14 +16,13 @@ class EncBlock(nn.Module):
     
 
 class DecBlock(nn.Module):
-    # rest block -> transpose conv (upsample)
+    # res block -> transpose conv (upsample)
     def __init__(self, in_chan, out_chan):
         super().__init__()
         self.dec = nn.Sequential(ResidualBlock(in_chan), 
                                  nn.ConvTranspose2d(in_chan, out_chan, kernel_size=2, stride=2))
     def forward(self, x):
         return self.dec(x)
-
 
 
 class ResidualBlock(nn.Module):
@@ -42,25 +41,21 @@ class ResidualBlock(nn.Module):
         out = self.conv2(out)
         return self.relu(out + x)
 
-
-
 class AttentionBlock(nn.Module):
-    # HELP section 4.3, above algorithm 1 area-ish
     # (enc feat map, dec signal prev layer) -> attention map
     def __init__(self, in_chan, gate_chan, out_chan):
         super().__init__()
-        self.enc_feat = nn.Conv2d(in_chan, out_chan, kernel_size=1) # kernel size ?
+        self.enc_feat = nn.Conv2d(in_chan, out_chan, kernel_size=1) 
         self.gating = nn.Conv2d(gate_chan, out_chan, kernel_size=1)
         self.attn_map = nn.Conv2d(out_chan, 1, kernel_size=1)
        
     def forward(self, x, g):
         enc_feat = self.enc_feat(x) # feat map from encoder layer [8, 64, 256, 32]
         gate_sig = self.gating(g) # gating signal from decoder [8, 1024, 16, 16]
-        # print('before up', gate_sig.shape)
-        # upsample the gating signal 
+
+        # upsample the gating signal for same spatial dim
         up_gate_sig = F.interpolate(gate_sig, size=enc_feat.shape[2:], mode='bilinear',)
-        # print('encfeat', enc_feat.shape)
-        # print('upsampled', up_gate_sig.shape)
+        
         combined = enc_feat + up_gate_sig # combine features
         # print('combined', combined.shape)
 

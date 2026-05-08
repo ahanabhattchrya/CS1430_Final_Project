@@ -2,10 +2,8 @@ import torch
 from sklearn.metrics import accuracy_score
 import numpy as np
 
-# algorithm 1 from paper in section 4.3 Poison Reconstruction i think?
-# unsure what to call this file? could just call it inference maybe?
-# testing
-def perform_inference(model, T, test_loader, device):
+# algorithm 1 from paper in section 4.3 Poison Reconstruction 
+def perform_inference(model, T, test_loader, device, save_file='inference_outputs.npz'):
 
     '''detection and depoisoning
     
@@ -25,8 +23,8 @@ def perform_inference(model, T, test_loader, device):
     with torch.no_grad():
         for I, I_cor, is_clean in test_loader:
             
-            # is_clean 1 = clean, 0 = poisoned
-            # I (clear or poisoned), I (clean_image)
+            # is_clean: 1 = clean, 0 = poisoned
+            # I (clear or poisoned), I_cor (clean_image)
             orig_img.append(I_cor)
             input_img.append(I)
 
@@ -41,13 +39,13 @@ def perform_inference(model, T, test_loader, device):
             H = comp_entropy(p_prime)
             is_poisoned = (H > T).float() # boolean [b], 1 = poisoned, 0 = clean 
 
-            # 3. poison subtraction
+            # 3. poison subtraction to only inputs predicted as poison
             clean_images = I.clone()
             poison_mask = is_poisoned.bool()
             clean_images[poison_mask] = (I[poison_mask] - p_prime[poison_mask]) # [b, c, h, w]
 
-            all_preds.append(is_poisoned) # 
-            all_labels.append((1 - is_clean)) #
+            all_preds.append(is_poisoned) 
+            all_labels.append((1 - is_clean)) # NOW: 1 = poisoned, 0 = clean
 
             all_clean_imgs.append(clean_images)
             all_p_prime.append(p_prime)
@@ -71,7 +69,7 @@ def perform_inference(model, T, test_loader, device):
     TNR = TN / (TN + FP)
 
     print(f'accuracy: {acc}, tpr: {TPR}, tnr: {TNR}')
-    np.savez("inference_outputs.npz",
+    np.savez(save_file,
     clean_images=all_clean_imgs.cpu().numpy(),
     orig_img=orig_img.cpu().numpy(),
     input_img=input_img.cpu().numpy(),
@@ -88,9 +86,8 @@ def comp_entropy(x):
     eps = 1e-8
     # normalize per-sample BEFORE softmax
     x_norm = (x - x.mean(dim=(1,2,3), keepdim=True)) / (x.std(dim=(1,2,3), keepdim=True) + eps)
-    # B = x.shape[0]
-    # x = x.view(B, -1)
     p_x = torch.softmax(x_norm, dim=1)
     H = - (p_x * torch.log(p_x + eps)).sum(dim=1)
+    
     return H.mean(dim=(1, 2))
 
