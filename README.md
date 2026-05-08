@@ -46,13 +46,18 @@ python clip_test.py # generates results/clip_histogram.png
 
 
 ## Lightshed
-oscar for Lightshed training (~6 mins)
+oscar for Lightshed training
 ``` 
 cd lightshed
 source .venv/bin/activate
 ```
 ```
 sbatch slurm_lightshed.sh
+```
+
+Create lightshed performance visualizations
+```
+python viz.py
 ```
 
 ## References
